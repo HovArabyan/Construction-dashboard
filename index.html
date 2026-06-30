@@ -1,0 +1,1840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construction Features Adoption Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F2F5;color:#1a1a2e}
+  .app{display:flex;min-height:100vh}
+  .sidebar{width:220px;background:#1F3864;flex-shrink:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .sidebar-logo{padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .sidebar-logo h1{color:#fff;font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .sidebar-logo p{color:rgba(255,255,255,.5);font-size:11px;margin-top:4px}
+  .sidebar-nav{padding:12px 0;flex:1}
+  .nav-section{padding:8px 20px 4px;color:rgba(255,255,255,.4);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,.75);font-size:13px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+  .nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+  .nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-left-color:#ED7D31}
+  .nav-item .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:11px}
+  .main{flex:1;overflow-x:hidden}
+  .topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
+  .topbar h2{font-size:18px;font-weight:700;color:#1F3864}
+  .topbar-meta{display:flex;align-items:center;gap:16px}
+  .badge{background:#E8F4FD;color:#2E75B6;font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+  .updated{color:#9CA3AF;font-size:12px}
+  .content{padding:24px 28px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .kpi-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid var(--accent)}
+  .kpi-label{font-size:11px;font-weight:600;color:#6B7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+  .kpi-value{font-size:28px;font-weight:800;color:#1F3864;line-height:1}
+  .kpi-sub{font-size:11px;color:#9CA3AF;margin-top:6px}
+  .charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px}
+  .card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card-title{font-size:13px;font-weight:700;color:#374151;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .card-title .pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:#F3F4F6;color:#6B7280}
+  .chart-wrap{position:relative;height:220px}
+  .funnel-bar{margin-bottom:10px}
+  .funnel-label{display:flex;justify-content:space-between;font-size:12px;color:#374151;margin-bottom:4px}
+  .funnel-label span:last-child{font-weight:600;color:#1F3864}
+  .funnel-track{background:#F3F4F6;border-radius:4px;height:22px;overflow:hidden}
+  .funnel-fill{height:100%;border-radius:4px;transition:width .6s ease}
+  .table-section{margin-bottom:24px}
+  .table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .table-header h3{font-size:13px;font-weight:700;color:#374151}
+  .search-box{padding:6px 12px;border:1px solid #E5E7EB;border-radius:6px;font-size:12px;outline:none;width:200px}
+  .search-box:focus{border-color:#2E75B6}
+  table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  th{background:#F9FAFB;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;user-select:none;white-space:nowrap}
+  th:hover{background:#F3F4F6;color:#374151}
+  td{padding:10px 14px;border-top:1px solid #F3F4F6;color:#374151;vertical-align:middle}
+  tr:hover td{background:#FAFBFC}
+  .badge-cat{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+  .badge-comm{background:#EBF3FB;color:#1F5C8B}
+  .badge-resi{background:#E8F5E9;color:#2E7D32}
+  .badge-unk{background:#F3F4F6;color:#6B7280}
+  .vol-bar{display:flex;align-items:center;gap:8px}
+  .vol-track{flex:1;background:#F3F4F6;border-radius:3px;height:8px;min-width:60px}
+  .vol-fill{height:100%;border-radius:3px}
+  .overview-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
+  .compare-table td:first-child{font-weight:600;color:#1F3864}
+  .page{display:none}.page.active{display:block}
+  .type-list{display:flex;flex-direction:column;gap:8px}
+  .type-row{display:flex;align-items:center;gap:10px;font-size:12px}
+  .type-label{width:160px;color:#374151;flex-shrink:0}
+  .type-track{flex:1;background:#F3F4F6;border-radius:3px;height:16px}
+  .type-fill{height:100%;border-radius:3px;background:#7030A0}
+  .type-count{width:40px;text-align:right;font-weight:600;color:#1F3864}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h1>ServiceTitan</h1>
+    <p>Construction Analytics</p>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="show('overview',this)">
+      <div class="dot" style="background:#ED7D31"></div>All Features
+    </div>
+    <div class="nav-section">Features</div>
+    <div class="nav-item" onclick="show('daily_logs',this)">
+      <div class="dot" style="background:#2E75B6"></div>Daily Logs
+    </div>
+    <div class="nav-item" onclick="show('rfi',this)">
+      <div class="dot" style="background:#C55A11"></div>RFIs
+    </div>
+    <div class="nav-item" onclick="show('cor',this)">
+      <div class="dot" style="background:#375623"></div>Change Orders
+    </div>
+    <div class="nav-item" onclick="show('submittals',this)">
+      <div class="dot" style="background:#7030A0"></div>Submittals
+    </div>
+    <div class="nav-section">Infrastructure</div>
+    <div class="nav-item" onclick="show('budget_codes',this)">
+      <div class="dot" style="background:#0F7B6C"></div>Budget Codes
+    </div>
+  </div>
+  <div class="sidebar-footer">Updated June 29, 2026</div>
+</nav>
+
+<div class="main">
+  <div class="topbar">
+    <h2 id="page-title">All Construction Features</h2>
+    <div class="topbar-meta">
+      <span class="badge">Aug 2025 - Jun 2026</span>
+      <span class="updated">Real tenants · Live & Onboarding</span>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- OVERVIEW -->
+    <div id="page-overview" class="page active">
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:#2E75B6">
+          <div class="kpi-label">Daily Logs - Peak Active Tenants</div>
+          <div class="kpi-value">88</div><div class="kpi-sub">Mar 2026 - 8,463 total logs</div>
+        </div>
+        <div class="kpi-card" style="--accent:#C55A11">
+          <div class="kpi-label">RFIs - Peak Active Tenants</div>
+          <div class="kpi-value">80</div><div class="kpi-sub">Feb 2026 - 1,201 total RFIs</div>
+        </div>
+        <div class="kpi-card" style="--accent:#375623">
+          <div class="kpi-label">Change Orders - Peak Active Tenants</div>
+          <div class="kpi-value">110</div><div class="kpi-sub">Feb 2026 - 1,423 total CORs - 52.6% approval</div>
+        </div>
+        <div class="kpi-card" style="--accent:#7030A0">
+          <div class="kpi-label">Submittals - Peak Active Tenants</div>
+          <div class="kpi-value">66</div><div class="kpi-sub">Feb 2026 - 1,448 total - 51% Product Data</div>
+        </div>
+        <div class="kpi-card" style="--accent:#0F7B6C">
+          <div class="kpi-label">Budget Codes - Tenants Configured</div>
+          <div class="kpi-value">192</div><div class="kpi-sub">of 192 construction tenants - 5.96M entity bindings</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-title">Monthly Active Tenants - All Features</div>
+        <div class="chart-wrap" style="height:280px"><canvas id="chart-overview"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Feature Comparison Summary</div>
+        <table class="compare-table">
+          <thead><tr>
+            <th>Feature</th><th>Tenants Ever</th><th>Peak Monthly Active</th>
+            <th>Total Volume</th><th>Completion Rate</th><th>Launch Month</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>Daily Logs</td><td>192</td><td>88 (Mar-26)</td><td>8,463 logs</td><td>14.3% finalized</td><td>Aug 2025</td></tr>
+            <tr><td>RFIs</td><td>312</td><td>80 (Feb-26)</td><td>1,201 RFIs</td><td>36.7% closed</td><td>Aug 2025</td></tr>
+            <tr><td>Change Orders</td><td>313</td><td>110 (Feb-26)</td><td>1,423 CORs</td><td>52.6% approved</td><td>Aug 2025</td></tr>
+            <tr><td>Submittals</td><td>197</td><td>66 (Feb-26)</td><td>1,448 submittals</td><td>47.1% closed</td><td>Oct 2025</td></tr>
+            <tr><td>Budget Codes</td><td>192</td><td>192 (all configured)</td><td>5.96M bindings</td><td>100% configured</td><td>Aug 2025</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="page-daily_logs" class="page">
+      <div class="kpi-grid"><div class="kpi-card" style="--accent:#2E75B6"><div class="kpi-label">Live Tenants Activated</div><div class="kpi-value">192</div><div class="kpi-sub">all-time</div></div><div class="kpi-card" style="--accent:#2E75B6"><div class="kpi-label">Peak Monthly Active</div><div class="kpi-value">88</div><div class="kpi-sub">Mar 2026</div></div><div class="kpi-card" style="--accent:#2E75B6"><div class="kpi-label">Total Logs Created</div><div class="kpi-value">8,463</div><div class="kpi-sub">Aug 25 - Jun 26</div></div><div class="kpi-card" style="--accent:#2E75B6"><div class="kpi-label">Finalization Rate</div><div class="kpi-value">14.3%</div><div class="kpi-sub">1,213 finalized</div></div></div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Monthly Trends <span class="pill">Active Tenants + Volume</span></div>
+          <div class="chart-wrap"><canvas id="chart-daily_logs-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Status Breakdown</div>
+          <div class="funnel-bar">
+          <div class="funnel-label"><span>Submitted / Active</span><span>7,250 (85.7%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:85.7%;background:#2E75B6"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Finalized / Approved</span><span>1,213 (14.3%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:14.3%;background:#1F3864"></div></div>
+        </div>
+        </div>
+      </div>
+      
+      <div class="table-section">
+        <div class="table-header"><h3>By Market Category</h3></div>
+        <table><thead><tr><th>Market Category</th><th>Tenants</th><th>Volume</th><th>Avg / Tenant</th></tr></thead><tbody><tr><td><span class="badge-cat badge-comm">Commercial+</span></td><td>110</td><td>4,850</td><td>44.1</td></tr><tr><td><span class="badge-cat badge-resi">Residential S&R</span></td><td>23</td><td>1,980</td><td>86.1</td></tr><tr><td><span class="badge-cat badge-unk">Unknown</span></td><td>19</td><td>1,633</td><td>85.9</td></tr></tbody></table>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3>Tenant Detail (Top 20)</h3>
+          <input class="search-box" type="text" placeholder="Search tenants..." oninput="filterTable(this,'daily_logs-tenant-table')">
+        </div>
+        <table id="daily_logs-tenant-table">
+          <thead><tr><th>Tenant ID</th><th>Tenant Name</th><th>Market Category</th><th>Industry</th><th>Size</th><th>Lifetime Volume</th><th>Mar 2026</th><th>Apr 2026</th><th>May 2026</th><th>Volume MTD</th><th>Active Months</th><th>Finalized/Closed</th></tr></thead>
+          <tbody><tr>
+          <td style="color:#6B7280;font-size:11px">1371569189</td>
+          <td style="font-weight:600;max-width:200px">Premium Plumbing, LLC</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">958</span>
+              <div class="vol-track"><div class="vol-fill" style="width:100%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">120</td>
+          <td style="text-align:center">131</td>
+          <td style="text-align:center">135</td>
+          <td style="text-align:center">131</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">513410343</td>
+          <td style="font-weight:600;max-width:200px">Air Mechanical, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">509</span>
+              <div class="vol-track"><div class="vol-fill" style="width:53%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">57</td>
+          <td style="text-align:center">138</td>
+          <td style="text-align:center">153</td>
+          <td style="text-align:center">144</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">279</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4315313045</td>
+          <td style="font-weight:600;max-width:200px">LL Mechanical Service, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">444</span>
+              <div class="vol-track"><div class="vol-fill" style="width:46%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">89</td>
+          <td style="text-align:center">61</td>
+          <td style="text-align:center">79</td>
+          <td style="text-align:center">80</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">107</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2483879445</td>
+          <td style="font-weight:600;max-width:200px">Benson Security Systems Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Security Systems</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">359</span>
+              <div class="vol-track"><div class="vol-fill" style="width:37%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">47</td>
+          <td style="text-align:center">62</td>
+          <td style="text-align:center">97</td>
+          <td style="text-align:center">81</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">864824110</td>
+          <td style="font-weight:600;max-width:200px">Aloha Pools & Spas</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Pool/Spa</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">314</span>
+              <div class="vol-track"><div class="vol-fill" style="width:33%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">39</td>
+          <td style="text-align:center">30</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">59</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2492166201</td>
+          <td style="font-weight:600;max-width:200px">Magnify Electric, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">307</span>
+              <div class="vol-track"><div class="vol-fill" style="width:32%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">41</td>
+          <td style="text-align:center">45</td>
+          <td style="text-align:center">40</td>
+          <td style="text-align:center">34</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">214</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4626926875</td>
+          <td style="font-weight:600;max-width:200px">Mundwiller Electric, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">284</span>
+              <div class="vol-track"><div class="vol-fill" style="width:30%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">55</td>
+          <td style="text-align:center">53</td>
+          <td style="text-align:center">51</td>
+          <td style="text-align:center">45</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">3</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1613187753</td>
+          <td style="font-weight:600;max-width:200px">Custom Filtration Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">242</span>
+              <div class="vol-track"><div class="vol-fill" style="width:25%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">68</td>
+          <td style="text-align:center">63</td>
+          <td style="text-align:center">53</td>
+          <td style="text-align:center">49</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2602875549</td>
+          <td style="font-weight:600;max-width:200px">JSP Plumbing</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">229</span>
+              <div class="vol-track"><div class="vol-fill" style="width:24%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">37</td>
+          <td style="text-align:center">58</td>
+          <td style="text-align:center">64</td>
+          <td style="text-align:center">62</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4333428885</td>
+          <td style="font-weight:600;max-width:200px">Meckley Services, Inc</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">225</span>
+              <div class="vol-track"><div class="vol-fill" style="width:23%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">121</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">410383364</td>
+          <td style="font-weight:600;max-width:200px">EDS Air Conditioning</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">223</span>
+              <div class="vol-track"><div class="vol-fill" style="width:23%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">50</td>
+          <td style="text-align:center">57</td>
+          <td style="text-align:center">59</td>
+          <td style="text-align:center">51</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1501707566</td>
+          <td style="font-weight:600;max-width:200px">Pend Oreille Mechanical Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">209</span>
+              <div class="vol-track"><div class="vol-fill" style="width:22%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">57</td>
+          <td style="text-align:center">62</td>
+          <td style="text-align:center">21</td>
+          <td style="text-align:center">17</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">426939921</td>
+          <td style="font-weight:600;max-width:200px">Norstar Heating & Cooling, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">207</span>
+              <div class="vol-track"><div class="vol-fill" style="width:22%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">38</td>
+          <td style="text-align:center">24</td>
+          <td style="text-align:center">34</td>
+          <td style="text-align:center">20</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2057834261</td>
+          <td style="font-weight:600;max-width:200px">Art's Plumbing, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">189</span>
+              <div class="vol-track"><div class="vol-fill" style="width:20%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">45</td>
+          <td style="text-align:center">38</td>
+          <td style="text-align:center">48</td>
+          <td style="text-align:center">50</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">991981610</td>
+          <td style="font-weight:600;max-width:200px">Kramer Electrical Service, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">177</span>
+              <div class="vol-track"><div class="vol-fill" style="width:18%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">49</td>
+          <td style="text-align:center">57</td>
+          <td style="text-align:center">42</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">411192964</td>
+          <td style="font-weight:600;max-width:200px">ETR Air Conditioning & Heating</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">177</span>
+              <div class="vol-track"><div class="vol-fill" style="width:18%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">31</td>
+          <td style="text-align:center">29</td>
+          <td style="text-align:center">19</td>
+          <td style="text-align:center">26</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">0</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1092344995</td>
+          <td style="font-weight:600;max-width:200px">Eyman Plumbing, Heating & Air</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">162</span>
+              <div class="vol-track"><div class="vol-fill" style="width:17%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">40</td>
+          <td style="text-align:center">33</td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">34</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">4</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1389658665</td>
+          <td style="font-weight:600;max-width:200px">Petra Heating & Air Conditioning</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">144</span>
+              <div class="vol-track"><div class="vol-fill" style="width:15%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">17</td>
+          <td style="text-align:center">11</td>
+          <td style="text-align:center">11</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">5</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4029621142</td>
+          <td style="font-weight:600;max-width:200px">Trinity Climate Solutions LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">143</span>
+              <div class="vol-track"><div class="vol-fill" style="width:15%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">32</td>
+          <td style="text-align:center">34</td>
+          <td style="text-align:center">41</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">102</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1070941229</td>
+          <td style="font-weight:600;max-width:200px">Advanced Comfort Solutions (WY)</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#2E75B6;min-width:32px">140</span>
+              <div class="vol-track"><div class="vol-fill" style="width:15%;background:#2E75B6"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">78</td>
+          <td style="text-align:center">58</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">1</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="page-rfi" class="page">
+      <div class="kpi-grid"><div class="kpi-card" style="--accent:#C55A11"><div class="kpi-label">Tenants Using RFIs</div><div class="kpi-value">312</div><div class="kpi-sub">all-time</div></div><div class="kpi-card" style="--accent:#C55A11"><div class="kpi-label">Peak Monthly Active</div><div class="kpi-value">80</div><div class="kpi-sub">Feb 2026</div></div><div class="kpi-card" style="--accent:#C55A11"><div class="kpi-label">Total RFIs Created</div><div class="kpi-value">1,201</div><div class="kpi-sub">Aug 25 - Jun 26</div></div><div class="kpi-card" style="--accent:#C55A11"><div class="kpi-label">Closure Rate</div><div class="kpi-value">36.7%</div><div class="kpi-sub">441 closed or responded</div></div></div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Monthly Trends <span class="pill">Active Tenants + Volume</span></div>
+          <div class="chart-wrap"><canvas id="chart-rfi-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Status Breakdown</div>
+          <div class="funnel-bar">
+          <div class="funnel-label"><span>Draft</span><span>400 (33.3%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:33.3%;background:#BDD7EE"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Sent</span><span>360 (30.0%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:30.0%;background:#9DC3E6"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Responded</span><span>127 (10.6%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:10.6%;background:#6AAFE6"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Closed</span><span>314 (26.1%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:26.1%;background:#1F3864"></div></div>
+        </div>
+        </div>
+      </div>
+      
+      <div class="table-section">
+        <div class="table-header"><h3>By Market Category</h3></div>
+        <table><thead><tr><th>Market Category</th><th>Tenants</th><th>Volume</th><th>Avg / Tenant</th></tr></thead><tbody><tr><td><span class="badge-cat badge-comm">Commercial+</span></td><td>210</td><td>874</td><td>4.2</td></tr><tr><td><span class="badge-cat badge-resi">Residential S&R</span></td><td>55</td><td>197</td><td>3.6</td></tr><tr><td><span class="badge-cat badge-unk">Unknown</span></td><td>47</td><td>130</td><td>2.8</td></tr></tbody></table>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3>Tenant Detail (Top 20)</h3>
+          <input class="search-box" type="text" placeholder="Search tenants..." oninput="filterTable(this,'rfi-tenant-table')">
+        </div>
+        <table id="rfi-tenant-table">
+          <thead><tr><th>Tenant ID</th><th>Tenant Name</th><th>Market Category</th><th>Industry</th><th>Size</th><th>Lifetime Volume</th><th>Mar 2026</th><th>Apr 2026</th><th>May 2026</th><th>Volume MTD</th><th>Active Months</th><th>Finalized/Closed</th></tr></thead>
+          <tbody><tr>
+          <td style="color:#6B7280;font-size:11px">4244838805</td>
+          <td style="font-weight:600;max-width:200px">Core Electrical Services, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">59</span>
+              <div class="vol-track"><div class="vol-fill" style="width:100%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">19</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4626926875</td>
+          <td style="font-weight:600;max-width:200px">Mundwiller Electric, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">48</span>
+              <div class="vol-track"><div class="vol-fill" style="width:81%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">729135143</td>
+          <td style="font-weight:600;max-width:200px">Key Heating and Air Conditioning, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">45</span>
+              <div class="vol-track"><div class="vol-fill" style="width:76%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">17</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">27</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4564106138</td>
+          <td style="font-weight:600;max-width:200px">McCaw Heating And Cooling LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">36</span>
+              <div class="vol-track"><div class="vol-fill" style="width:61%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">14</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2602875549</td>
+          <td style="font-weight:600;max-width:200px">JSP Plumbing & Heating Corp</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">35</span>
+              <div class="vol-track"><div class="vol-fill" style="width:59%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">12</td>
+          <td style="text-align:center">16</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">30</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">536075044</td>
+          <td style="font-weight:600;max-width:200px">R&D Plumbing & Heating</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">29</span>
+              <div class="vol-track"><div class="vol-fill" style="width:49%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">16</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3693706389</td>
+          <td style="font-weight:600;max-width:200px">Ready Power LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:47%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">27</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">19</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4086972693</td>
+          <td style="font-weight:600;max-width:200px">Jayden's Mechanical Ltd.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:47%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">7</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">901450317</td>
+          <td style="font-weight:600;max-width:200px">Lowry Overhead Doors</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">27</span>
+              <div class="vol-track"><div class="vol-fill" style="width:46%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4379120798</td>
+          <td style="font-weight:600;max-width:200px">Ehman Electrical Contractor LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:44%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">15</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">426939921</td>
+          <td style="font-weight:600;max-width:200px">Norstar Heating & Cooling, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:44%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">14</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">11</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2483879445</td>
+          <td style="font-weight:600;max-width:200px">Benson Systems, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Security Systems</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">23</span>
+              <div class="vol-track"><div class="vol-fill" style="width:39%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4399405338</td>
+          <td style="font-weight:600;max-width:200px">AMSI Services</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">22</span>
+              <div class="vol-track"><div class="vol-fill" style="width:37%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">19</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4333428885</td>
+          <td style="font-weight:600;max-width:200px">Meckley Services, Inc</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:32%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">3</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1389035686</td>
+          <td style="font-weight:600;max-width:200px">Rhyno's Ltd.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:32%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">9</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3101134229</td>
+          <td style="font-weight:600;max-width:200px">Westlake Plumbing</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">18</span>
+              <div class="vol-track"><div class="vol-fill" style="width:31%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">8</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">709454783</td>
+          <td style="font-weight:600;max-width:200px">Shaw Mechanical LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">18</span>
+              <div class="vol-track"><div class="vol-fill" style="width:31%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">516069328</td>
+          <td style="font-weight:600;max-width:200px">Trouth Air Conditioning</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">16</span>
+              <div class="vol-track"><div class="vol-fill" style="width:27%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4648139419</td>
+          <td style="font-weight:600;max-width:200px">Air Design Systems MEP, LLC.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">13</span>
+              <div class="vol-track"><div class="vol-fill" style="width:22%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">5</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3319963286</td>
+          <td style="font-weight:600;max-width:200px">Med City Electric LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#C55A11;min-width:32px">13</span>
+              <div class="vol-track"><div class="vol-fill" style="width:22%;background:#C55A11"></div></div></div></td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">6</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="page-cor" class="page">
+      <div class="kpi-grid"><div class="kpi-card" style="--accent:#375623"><div class="kpi-label">Tenants Using CORs</div><div class="kpi-value">313</div><div class="kpi-sub">all-time</div></div><div class="kpi-card" style="--accent:#375623"><div class="kpi-label">Peak Monthly Active</div><div class="kpi-value">110</div><div class="kpi-sub">Feb 2026</div></div><div class="kpi-card" style="--accent:#375623"><div class="kpi-label">Total CORs Created</div><div class="kpi-value">1,423</div><div class="kpi-sub">Aug 25 - Jun 26</div></div><div class="kpi-card" style="--accent:#375623"><div class="kpi-label">Approval Rate</div><div class="kpi-value">52.6%</div><div class="kpi-sub">748 approved</div></div></div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Monthly Trends <span class="pill">Active Tenants + Volume</span></div>
+          <div class="chart-wrap"><canvas id="chart-cor-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Status Breakdown</div>
+          <div class="funnel-bar">
+          <div class="funnel-label"><span>Approved</span><span>748 (52.6%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:52.6%;background:#375623"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Draft</span><span>391 (27.5%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:27.5%;background:#BDD7EE"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Sent</span><span>190 (13.4%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:13.4%;background:#9DC3E6"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Rejected</span><span>86 (6.0%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:6.0%;background:#C00000"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Responded</span><span>8 (0.6%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:0.6%;background:#6AAFE6"></div></div>
+        </div>
+        </div>
+      </div>
+      
+      <div class="table-section">
+        <div class="table-header"><h3>By Market Category</h3></div>
+        <table><thead><tr><th>Market Category</th><th>Tenants</th><th>Volume</th><th>Avg / Tenant</th><th>Completion Rate</th></tr></thead><tbody><tr><td><span class="badge-cat badge-comm">Commercial+</span></td><td>210</td><td>1,047</td><td>5.0</td><td>52.6%</td></tr><tr><td><span class="badge-cat badge-resi">Residential S&R</span></td><td>62</td><td>293</td><td>4.7</td><td>52.6%</td></tr><tr><td><span class="badge-cat badge-unk">Unknown</span></td><td>41</td><td>83</td><td>2.0</td><td>52.6%</td></tr></tbody></table>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3>Tenant Detail (Top 20)</h3>
+          <input class="search-box" type="text" placeholder="Search tenants..." oninput="filterTable(this,'cor-tenant-table')">
+        </div>
+        <table id="cor-tenant-table">
+          <thead><tr><th>Tenant ID</th><th>Tenant Name</th><th>Market Category</th><th>Industry</th><th>Size</th><th>Lifetime Volume</th><th>Mar 2026</th><th>Apr 2026</th><th>May 2026</th><th>Volume MTD</th><th>Active Months</th><th>Finalized/Closed</th></tr></thead>
+          <tbody><tr>
+          <td style="color:#6B7280;font-size:11px">4680646549</td>
+          <td style="font-weight:600;max-width:200px">Bantam's Plumbing Company, Inc.</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">106</span>
+              <div class="vol-track"><div class="vol-fill" style="width:100%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">69</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">77</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4310244373</td>
+          <td style="font-weight:600;max-width:200px">Buzzbolt Electric Limited</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">62</span>
+              <div class="vol-track"><div class="vol-fill" style="width:58%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">14</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">43</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4244838805</td>
+          <td style="font-weight:600;max-width:200px">Core Electrical Services, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">61</span>
+              <div class="vol-track"><div class="vol-fill" style="width:58%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">12</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">24</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4582193941</td>
+          <td style="font-weight:600;max-width:200px">Ambition Mechanical Services</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">46</span>
+              <div class="vol-track"><div class="vol-fill" style="width:43%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">16</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">28</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4648139419</td>
+          <td style="font-weight:600;max-width:200px">Air Design Systems MEP, LLC.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">45</span>
+              <div class="vol-track"><div class="vol-fill" style="width:42%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">21</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">22</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3319963286</td>
+          <td style="font-weight:600;max-width:200px">Med City Electric LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">37</span>
+              <div class="vol-track"><div class="vol-fill" style="width:35%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">16</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2249552758</td>
+          <td style="font-weight:600;max-width:200px">Overhead Door Company of Chicago</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">29</span>
+              <div class="vol-track"><div class="vol-fill" style="width:27%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">21</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">516069328</td>
+          <td style="font-weight:600;max-width:200px">Trouth Air Conditioning</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:26%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">19</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">8</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4417157909</td>
+          <td style="font-weight:600;max-width:200px">GHC Mechanical</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:26%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">24</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4399405338</td>
+          <td style="font-weight:600;max-width:200px">AMSI Services</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:26%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">22</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">15</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4379120798</td>
+          <td style="font-weight:600;max-width:200px">Ehman Electrical Contractor LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">27</span>
+              <div class="vol-track"><div class="vol-fill" style="width:25%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">12</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">9</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4861203221</td>
+          <td style="font-weight:600;max-width:200px">Air Craft, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:25%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">23</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">16</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4427585695</td>
+          <td style="font-weight:600;max-width:200px">iPlumbKC, LLC</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:25%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">21</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">410383364</td>
+          <td style="font-weight:600;max-width:200px">E.D.S Air Conditioning & Plumbing</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:25%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">14</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4633086485</td>
+          <td style="font-weight:600;max-width:200px">DryTech Commercial Roofing Services</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Roofing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">24</span>
+              <div class="vol-track"><div class="vol-fill" style="width:23%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">21</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1827943193</td>
+          <td style="font-weight:600;max-width:200px">Priority Plumbers, LLC</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">20</span>
+              <div class="vol-track"><div class="vol-fill" style="width:19%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">13</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">916906681</td>
+          <td style="font-weight:600;max-width:200px">U M Air Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:18%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">6</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4315313045</td>
+          <td style="font-weight:600;max-width:200px">LL Mechanical Services, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:18%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">8</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">875268266</td>
+          <td style="font-weight:600;max-width:200px">MJ Plumbing Heating & Cooling</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">18</span>
+              <div class="vol-track"><div class="vol-fill" style="width:17%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4333428885</td>
+          <td style="font-weight:600;max-width:200px">Meckley Services, Inc</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#375623;min-width:32px">16</span>
+              <div class="vol-track"><div class="vol-fill" style="width:15%;background:#375623"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">5</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="page-submittals" class="page">
+      <div class="kpi-grid"><div class="kpi-card" style="--accent:#7030A0"><div class="kpi-label">Tenants Using Submittals</div><div class="kpi-value">197</div><div class="kpi-sub">all-time</div></div><div class="kpi-card" style="--accent:#7030A0"><div class="kpi-label">Peak Monthly Active</div><div class="kpi-value">66</div><div class="kpi-sub">Feb 2026</div></div><div class="kpi-card" style="--accent:#7030A0"><div class="kpi-label">Total Submittals Created</div><div class="kpi-value">1,448</div><div class="kpi-sub">Oct 25 - Jun 26</div></div><div class="kpi-card" style="--accent:#7030A0"><div class="kpi-label">Closure Rate</div><div class="kpi-value">47.1%</div><div class="kpi-sub">682 closed</div></div></div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Monthly Trends <span class="pill">Active Tenants + Volume</span></div>
+          <div class="chart-wrap"><canvas id="chart-submittals-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Status Breakdown</div>
+          <div class="funnel-bar">
+          <div class="funnel-label"><span>Closed</span><span>682 (47.1%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:47.1%;background:#1F3864"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Submitted</span><span>326 (22.5%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:22.5%;background:#9DC3E6"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Draft</span><span>312 (21.5%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:21.5%;background:#BDD7EE"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Response Received</span><span>128 (8.8%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:8.8%;background:#6AAFE6"></div></div>
+        </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:24px"><div class="card-title">Submittal Types</div><div class="type-list"><div class="type-row"><span class="type-label">Product Data</span><div class="type-track"><div class="type-fill" style="width:51%"></div></div><span class="type-count">740</span></div><div class="type-row"><span class="type-label">Other / Unspecified</span><div class="type-track"><div class="type-fill" style="width:33%"></div></div><span class="type-count">479</span></div><div class="type-row"><span class="type-label">Shop Drawings</span><div class="type-track"><div class="type-fill" style="width:13%"></div></div><span class="type-count">188</span></div><div class="type-row"><span class="type-label">Method of Procedures</span><div class="type-track"><div class="type-fill" style="width:1%"></div></div><span class="type-count">20</span></div><div class="type-row"><span class="type-label">Samples</span><div class="type-track"><div class="type-fill" style="width:1%"></div></div><span class="type-count">14</span></div><div class="type-row"><span class="type-label">Mock-Ups</span><div class="type-track"><div class="type-fill" style="width:0%"></div></div><span class="type-count">7</span></div></div></div>
+      <div class="table-section">
+        <div class="table-header"><h3>By Market Category</h3></div>
+        <table><thead><tr><th>Market Category</th><th>Tenants</th><th>Volume</th><th>Avg / Tenant</th><th>Completion Rate</th></tr></thead><tbody><tr><td><span class="badge-cat badge-comm">Commercial+</span></td><td>133</td><td>1,064</td><td>8.0</td><td>47.1%</td></tr><tr><td><span class="badge-cat badge-resi">Residential S&R</span></td><td>42</td><td>293</td><td>7.0</td><td>47.1%</td></tr><tr><td><span class="badge-cat badge-unk">Unknown</span></td><td>22</td><td>91</td><td>4.1</td><td>47.1%</td></tr></tbody></table>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3>Tenant Detail (Top 20)</h3>
+          <input class="search-box" type="text" placeholder="Search tenants..." oninput="filterTable(this,'submittals-tenant-table')">
+        </div>
+        <table id="submittals-tenant-table">
+          <thead><tr><th>Tenant ID</th><th>Tenant Name</th><th>Market Category</th><th>Industry</th><th>Size</th><th>Lifetime Volume</th><th>Mar 2026</th><th>Apr 2026</th><th>May 2026</th><th>Volume MTD</th><th>Active Months</th><th>Finalized/Closed</th></tr></thead>
+          <tbody><tr>
+          <td style="color:#6B7280;font-size:11px">4399405338</td>
+          <td style="font-weight:600;max-width:200px">AMSI Services</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">164</span>
+              <div class="vol-track"><div class="vol-fill" style="width:100%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">22</td>
+          <td style="text-align:center">50</td>
+          <td style="text-align:center">62</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">89</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1028353066</td>
+          <td style="font-weight:600;max-width:200px">Overhead Door Co. of Greater Pittsburgh</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">145</span>
+              <div class="vol-track"><div class="vol-fill" style="width:88%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">140</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4244838805</td>
+          <td style="font-weight:600;max-width:200px">Core Electrical Services, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">103</span>
+              <div class="vol-track"><div class="vol-fill" style="width:63%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">11</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">34</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3693706389</td>
+          <td style="font-weight:600;max-width:200px">Ready Power LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">93</span>
+              <div class="vol-track"><div class="vol-fill" style="width:57%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">93</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">61</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">636172980</td>
+          <td style="font-weight:600;max-width:200px">Climatech of Professional Air Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">70</span>
+              <div class="vol-track"><div class="vol-fill" style="width:43%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">20</td>
+          <td style="text-align:center">27</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">15</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">32</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">965678373</td>
+          <td style="font-weight:600;max-width:200px">Crawford Door Sales</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">37</span>
+              <div class="vol-track"><div class="vol-fill" style="width:23%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">24</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3841494556</td>
+          <td style="font-weight:600;max-width:200px">Parker Services, Inc</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">33</span>
+              <div class="vol-track"><div class="vol-fill" style="width:20%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">1</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4491957013</td>
+          <td style="font-weight:600;max-width:200px">Reeves Specialty Services LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">33</span>
+              <div class="vol-track"><div class="vol-fill" style="width:20%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">17</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">5</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2386390811</td>
+          <td style="font-weight:600;max-width:200px">JBF LLC DBA Pioneer Overhead Door</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">30</span>
+              <div class="vol-track"><div class="vol-fill" style="width:18%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">11</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">16</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">516069328</td>
+          <td style="font-weight:600;max-width:200px">Trouth Air Conditioning</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:17%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">10</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">14</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4315313045</td>
+          <td style="font-weight:600;max-width:200px">LL Mechanical Services, LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">28</span>
+              <div class="vol-track"><div class="vol-fill" style="width:17%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">17</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">438898094</td>
+          <td style="font-weight:600;max-width:200px">Stanley-Ruth Co. LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">25</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">7</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4648139419</td>
+          <td style="font-weight:600;max-width:200px">Air Design Systems MEP, LLC.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">12</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">12</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">125844995</td>
+          <td style="font-weight:600;max-width:200px">Allied Plumbing & Trenchless</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">11</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1689452192</td>
+          <td style="font-weight:600;max-width:200px">Postma Heating And Cooling Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td>Enterprise</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">26</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">12</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4680646549</td>
+          <td style="font-weight:600;max-width:200px">Bantam's Plumbing Company, Inc.</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">23</span>
+              <div class="vol-track"><div class="vol-fill" style="width:14%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">8</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">6</td>
+          <td style="text-align:center">7</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">848413091</td>
+          <td style="font-weight:600;max-width:200px">JKA Well Drilling & Pumps</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">20</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">12</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">410383364</td>
+          <td style="font-weight:600;max-width:200px">E.D.S Air Conditioning & Plumbing</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">20</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">18</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">12</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">901450317</td>
+          <td style="font-weight:600;max-width:200px">Lowry Overhead Doors</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Garage Door</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">7</td>
+          <td style="text-align:center">10</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2745517717</td>
+          <td style="font-weight:600;max-width:200px">Titan Plumbing LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td>Corporate</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#7030A0;min-width:32px">19</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#7030A0"></div></div></div></td>
+          <td style="text-align:center">3</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">1</td>
+          <td style="text-align:center">4</td>
+          <td style="text-align:center">5</td>
+          <td style="text-align:center">5</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="page-budget_codes" class="page">
+      <div class="kpi-grid"><div class="kpi-card" style="--accent:#0F7B6C"><div class="kpi-label">Tenants w/ Budget Codes</div><div class="kpi-value">192</div><div class="kpi-sub">construction tenants configured</div></div><div class="kpi-card" style="--accent:#0F7B6C"><div class="kpi-label">Total Entity Bindings</div><div class="kpi-value">5.96M</div><div class="kpi-sub">all-time across all entity types</div></div><div class="kpi-card" style="--accent:#0F7B6C"><div class="kpi-label">Estimate Item Bindings</div><div class="kpi-value">3.85M</div><div class="kpi-sub">64.6% of all bindings</div></div><div class="kpi-card" style="--accent:#0F7B6C"><div class="kpi-label">Custom Segments</div><div class="kpi-value">10</div><div class="kpi-sub">tenants with non-standard segments beyond CC+CT+Phase</div></div></div>
+      <div class="charts-row">
+        <div class="card">
+          <div class="card-title">Monthly Trends <span class="pill">Tenants Creating New Codes</span></div>
+          <div class="chart-wrap"><canvas id="chart-budget_codes-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Usage by Entity Type</div>
+          <div class="funnel-bar">
+          <div class="funnel-label"><span>Estimate Items</span><span>3,850,101 (64.7%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:64.7%;background:#0F7B6C"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Payroll / Labor Items</span><span>723,030 (12.1%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:12.1%;background:#1A9B87"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Other Entity Types</span><span>864,221 (14.5%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:14.5%;background:#C8E6E3"></div></div>
+        </div><div class="funnel-bar">
+          <div class="funnel-label"><span>Invoice / Billing Items</span><span>517,886 (8.7%)</span></div>
+          <div class="funnel-track"><div class="funnel-fill" style="width:8.7%;background:#2AC4AC"></div></div>
+        </div>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="table-section" style="margin-bottom:0">
+          <div class="table-header"><h3>Segment Configuration Breakdown</h3></div>
+          <table><thead><tr><th>Segment Configuration</th><th>Tenants</th><th>Share</th></tr></thead><tbody><tr><td><span class="badge-cat badge-comm">Cost Code + Cost Type + Phase (Standard)</span></td><td>181</td><td>94%</td></tr><tr><td><span class="badge-cat badge-comm">Standard + Tenant Custom Segments</span></td><td>10</td><td>5%</td></tr><tr><td><span class="badge-cat badge-unk">Budget Codes Only (no Segments)</span></td><td>1</td><td>1%</td></tr></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-title">Custom Segment Types <span class="pill">10 tenants</span></div>
+          <div class="type-list"><div class="type-row"><span class="type-label">Building Number</span><div class="type-track"><div class="type-fill" style="width:67%;background:#0F7B6C"></div></div><span class="type-count">2</span></div><div class="type-row"><span class="type-label">Department</span><div class="type-track"><div class="type-fill" style="width:33%;background:#0F7B6C"></div></div><span class="type-count">1</span></div><div class="type-row"><span class="type-label">Trade / Function</span><div class="type-track"><div class="type-fill" style="width:33%;background:#0F7B6C"></div></div><span class="type-count">1</span></div><div class="type-row"><span class="type-label">SOV</span><div class="type-track"><div class="type-fill" style="width:33%;background:#0F7B6C"></div></div><span class="type-count">1</span></div><div class="type-row"><span class="type-label">Phasing / Sequence</span><div class="type-track"><div class="type-fill" style="width:67%;background:#0F7B6C"></div></div><span class="type-count">2</span></div><div class="type-row"><span class="type-label">Other custom</span><div class="type-track"><div class="type-fill" style="width:100%;background:#0F7B6C"></div></div><span class="type-count">3</span></div></div>
+        </div>
+      </div>
+      <div class="table-section">
+        <div class="table-header">
+          <h3>Tenant Detail - Top 20 by Bindings</h3>
+          <input class="search-box" type="text" placeholder="Search tenants..." oninput="filterTable(this,'budget_codes-tenant-table')">
+        </div>
+        <table id="budget_codes-tenant-table">
+          <thead><tr><th>Tenant ID</th><th>Tenant Name</th><th>Market Category</th><th>Industry</th><th>Total Bindings</th><th>Mar 2026</th><th>Apr 2026</th><th>May 2026</th><th>Jun 2026</th><th>Unique Budget Codes</th><th>Segments</th></tr></thead>
+          <tbody><tr>
+          <td style="color:#6B7280;font-size:11px">889499837</td>
+          <td style="font-weight:600;max-width:200px">PJ Fitzpatrick LLC</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Roofing / Plumbing</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">949,187</span>
+              <div class="vol-track"><div class="vol-fill" style="width:100%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4514093722</td>
+          <td style="font-weight:600;max-width:200px">Davis A/C</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">695,127</span>
+              <div class="vol-track"><div class="vol-fill" style="width:73%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">44</td>
+          <td style="text-align:center">3</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">513410343</td>
+          <td style="font-weight:600;max-width:200px">Air Mechanical, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">153,186</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">13</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">588925512</td>
+          <td style="font-weight:600;max-width:200px">Beyer Plumbing Company, Ltd.</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Plumbing</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">152,995</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2075</td>
+          <td style="text-align:center">4</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1570405818</td>
+          <td style="font-weight:600;max-width:200px">Adams Electric Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Electrical</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">150,796</span>
+              <div class="vol-track"><div class="vol-fill" style="width:16%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">9</td>
+          <td style="text-align:center">3</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">414185988</td>
+          <td style="font-weight:600;max-width:200px">Riley Plumbing & Heating</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">140,163</span>
+              <div class="vol-track"><div class="vol-fill" style="width:15%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">878299941</td>
+          <td style="font-weight:600;max-width:200px">Middleton Heat & Air</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">111,424</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">201</td>
+          <td style="text-align:center">3</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4838610965</td>
+          <td style="font-weight:600;max-width:200px">Hurlburt</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">109,597</span>
+              <div class="vol-track"><div class="vol-fill" style="width:12%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4151076245</td>
+          <td style="font-weight:600;max-width:200px">Roofwerks, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Roofing</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">107,183</span>
+              <div class="vol-track"><div class="vol-fill" style="width:11%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">3739165333</td>
+          <td style="font-weight:600;max-width:200px">Magnolia Plumbing, Heating & Cooling</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">105,032</span>
+              <div class="vol-track"><div class="vol-fill" style="width:11%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4558609703</td>
+          <td style="font-weight:600;max-width:200px">James River A/C</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">103,080</span>
+              <div class="vol-track"><div class="vol-fill" style="width:11%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">65</td>
+          <td style="text-align:center">4</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">864824110</td>
+          <td style="font-weight:600;max-width:200px">Aloha Pools & Spas</td>
+          <td><span class="badge-cat badge-resi">Residential S&R</span></td>
+          <td>Pool / Spa</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">98,086</span>
+              <div class="vol-track"><div class="vol-fill" style="width:10%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">378941836</td>
+          <td style="font-weight:600;max-width:200px">Gillette Heating & Air Conditioning</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">94,941</span>
+              <div class="vol-track"><div class="vol-fill" style="width:10%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2450016174</td>
+          <td style="font-weight:600;max-width:200px">Goose Creek Heating</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">89,774</span>
+              <div class="vol-track"><div class="vol-fill" style="width:9%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">2283436330</td>
+          <td style="font-weight:600;max-width:200px">JKS KV Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">85,911</span>
+              <div class="vol-track"><div class="vol-fill" style="width:9%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">420967683</td>
+          <td style="font-weight:600;max-width:200px">Skillings & Sons</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">81,366</span>
+              <div class="vol-track"><div class="vol-fill" style="width:9%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">4333428885</td>
+          <td style="font-weight:600;max-width:200px">Meckley Services, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>Plumbing</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">74,269</span>
+              <div class="vol-track"><div class="vol-fill" style="width:8%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">134</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">397061508</td>
+          <td style="font-weight:600;max-width:200px">Air Solutions, Inc.</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">68,474</span>
+              <div class="vol-track"><div class="vol-fill" style="width:7%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1345706406</td>
+          <td style="font-weight:600;max-width:200px">Nottawasaga Mechanical</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">65,856</span>
+              <div class="vol-track"><div class="vol-fill" style="width:7%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">2</td>
+          <td style="text-align:center">2</td>
+        </tr><tr>
+          <td style="color:#6B7280;font-size:11px">1070941229</td>
+          <td style="font-weight:600;max-width:200px">Advanced Comfort Solutions (WY)</td>
+          <td><span class="badge-cat badge-comm">Commercial+</span></td>
+          <td>HVAC</td>
+          <td><div class="vol-bar"><span style="font-weight:700;color:#0F7B6C;min-width:40px">64,833</span>
+              <div class="vol-track"><div class="vol-fill" style="width:7%;background:#0F7B6C"></div></div></div></td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">0</td>
+          <td style="text-align:center">223</td>
+          <td style="text-align:center">3</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+<script>
+const DATA = {"daily_logs": {"label": "Daily Logs", "color": "#2E75B6", "light": "#DCE6F1", "kpis": [{"label": "Live Tenants Activated", "value": "192", "sub": "all-time"}, {"label": "Peak Monthly Active", "value": "88", "sub": "Mar 2026"}, {"label": "Total Logs Created", "value": "8,463", "sub": "Aug 25 - Jun 26"}, {"label": "Finalization Rate", "value": "14.3%", "sub": "1,213 finalized"}], "monthly": {"labels": ["Aug-25", "Sep-25", "Oct-25", "Nov-25", "Dec-25", "Jan-26", "Feb-26", "Mar-26", "Apr-26", "May-26", "Jun-26"], "tenants": [2, 9, 19, 26, 28, 48, 70, 88, 83, 82, 80], "volume": [9, 77, 203, 252, 396, 660, 909, 1324, 1464, 1552, 1617]}, "status": [{"label": "Submitted / Active", "value": 7250, "color": "#2E75B6"}, {"label": "Finalized / Approved", "value": 1213, "color": "#1F3864"}], "market_cat": [{"cat": "Commercial+", "tenants": 110, "volume": 4850, "rate": "--"}, {"cat": "Residential S&R", "tenants": 23, "volume": 1980, "rate": "--"}, {"cat": "Unknown", "tenants": 19, "volume": 1633, "rate": "--"}], "tenants": [["1371569189", "Premium Plumbing, LLC", "Residential S&R", "Plumbing", "Corporate", 958, 8, 0, 120, 131, 135, 131], ["513410343", "Air Mechanical, Inc.", "Commercial+", "HVAC", "Enterprise", 509, 6, 279, 57, 138, 153, 144], ["4315313045", "LL Mechanical Service, LLC", "Commercial+", "HVAC", "Corporate", 444, 7, 107, 89, 61, 79, 80], ["2483879445", "Benson Security Systems Inc.", "Commercial+", "Security Systems", "Corporate", 359, 7, 0, 47, 62, 97, 81], ["864824110", "Aloha Pools & Spas", "Residential S&R", "Pool/Spa", "Corporate", 314, 10, 59, 39, 30, 13, 8], ["2492166201", "Magnify Electric, LLC", "Commercial+", "Electrical", "Corporate", 307, 8, 214, 41, 45, 40, 34], ["4626926875", "Mundwiller Electric, LLC", "Commercial+", "Electrical", "Corporate", 284, 8, 3, 55, 53, 51, 45], ["1613187753", "Custom Filtration Inc.", "Commercial+", "Plumbing", "Corporate", 242, 5, 0, 68, 63, 53, 49], ["2602875549", "JSP Plumbing", "Commercial+", "Plumbing", "Corporate", 229, 5, 10, 37, 58, 64, 62], ["4333428885", "Meckley Services, Inc", "Commercial+", "Plumbing", "Enterprise", 225, 7, 121, 5, 3, 1, 1], ["410383364", "EDS Air Conditioning", "Residential S&R", "HVAC", "Corporate", 223, 8, 2, 50, 57, 59, 51], ["1501707566", "Pend Oreille Mechanical Inc.", "Commercial+", "HVAC", "Corporate", 209, 5, 2, 57, 62, 21, 17], ["426939921", "Norstar Heating & Cooling, Inc.", "Commercial+", "HVAC", "Corporate", 207, 9, 0, 38, 24, 34, 20], ["2057834261", "Art's Plumbing, LLC", "Commercial+", "Plumbing", "Corporate", 189, 5, 0, 45, 38, 48, 50], ["991981610", "Kramer Electrical Service, LLC", "Commercial+", "Electrical", "Corporate", 177, 7, 0, 25, 49, 57, 42], ["411192964", "ETR Air Conditioning & Heating", "Commercial+", "HVAC", "Enterprise", 177, 8, 0, 31, 29, 19, 26], ["1092344995", "Eyman Plumbing, Heating & Air", "Commercial+", "Plumbing", "Enterprise", 162, 6, 4, 40, 33, 25, 34], ["1389658665", "Petra Heating & Air Conditioning", "Commercial+", "HVAC", "Corporate", 144, 8, 5, 17, 11, 11, 13], ["4029621142", "Trinity Climate Solutions LLC", "Commercial+", "HVAC", "Corporate", 143, 7, 102, 25, 32, 34, 41], ["1070941229", "Advanced Comfort Solutions (WY)", "Commercial+", "HVAC", "Corporate", 140, 4, 1, 1, 3, 78, 58]]}, "rfi": {"label": "RFIs", "color": "#C55A11", "light": "#FCE4D6", "kpis": [{"label": "Tenants Using RFIs", "value": "312", "sub": "all-time"}, {"label": "Peak Monthly Active", "value": "80", "sub": "Feb 2026"}, {"label": "Total RFIs Created", "value": "1,201", "sub": "Aug 25 - Jun 26"}, {"label": "Closure Rate", "value": "36.7%", "sub": "441 closed or responded"}], "monthly": {"labels": ["Aug-25", "Sep-25", "Oct-25", "Nov-25", "Dec-25", "Jan-26", "Feb-26", "Mar-26", "Apr-26", "May-26", "Jun-26"], "tenants": [1, 14, 21, 35, 42, 65, 80, 78, 63, 51, 55], "volume": [2, 29, 35, 69, 93, 132, 161, 180, 183, 154, 163]}, "status": [{"label": "Draft", "value": 400, "color": "#BDD7EE"}, {"label": "Sent", "value": 360, "color": "#9DC3E6"}, {"label": "Responded", "value": 127, "color": "#6AAFE6"}, {"label": "Closed", "value": 314, "color": "#1F3864"}], "market_cat": [{"cat": "Commercial+", "tenants": 210, "volume": 874, "rate": "--"}, {"cat": "Residential S&R", "tenants": 55, "volume": 197, "rate": "--"}, {"cat": "Unknown", "tenants": 47, "volume": 130, "rate": "--"}], "tenants": [["4244838805", "Core Electrical Services, Inc.", "Commercial+", "Electrical", "Corporate", 59, 7, 19, 1, 2, 9, 10], ["4626926875", "Mundwiller Electric, LLC", "Commercial+", "Electrical", "Corporate", 48, 5, 2, 5, 25, 3, 0], ["729135143", "Key Heating and Air Conditioning, Inc.", "Commercial+", "HVAC", "Corporate", 45, 4, 27, 0, 2, 25, 17], ["4564106138", "McCaw Heating And Cooling LLC", "Commercial+", "HVAC", "Corporate", 36, 7, 14, 8, 3, 1, 1], ["2602875549", "JSP Plumbing & Heating Corp", "Commercial+", "Plumbing", "Corporate", 35, 5, 30, 12, 16, 4, 1], ["536075044", "R&D Plumbing & Heating", "Commercial+", "HVAC", "Corporate", 29, 4, 16, 9, 6, 4, 10], ["3693706389", "Ready Power LLC", "Commercial+", "Electrical", "Corporate", 28, 2, 19, 1, 0, 0, 27], ["4086972693", "Jayden's Mechanical Ltd.", "Commercial+", "HVAC", "Enterprise", 28, 8, 7, 5, 1, 6, 9], ["901450317", "Lowry Overhead Doors", "Residential S&R", "Garage Door", "Corporate", 27, 8, 10, 1, 3, 1, 8], ["4379120798", "Ehman Electrical Contractor LLC", "Commercial+", "Electrical", "Corporate", 26, 3, 15, 5, 15, 6, 0], ["426939921", "Norstar Heating & Cooling, Inc.", "Commercial+", "HVAC", "Corporate", 26, 7, 11, 0, 2, 14, 1], ["2483879445", "Benson Systems, Inc.", "Commercial+", "Security Systems", "Corporate", 23, 5, 2, 0, 0, 2, 0], ["4399405338", "AMSI Services", "Commercial+", "HVAC", "Enterprise", 22, 5, 19, 10, 3, 7, 0], ["4333428885", "Meckley Services, Inc", "Commercial+", "Plumbing", "Enterprise", 19, 5, 3, 0, 1, 0, 0], ["1389035686", "Rhyno's Ltd.", "Commercial+", "HVAC", "Corporate", 19, 6, 9, 0, 5, 1, 4], ["3101134229", "Westlake Plumbing", "Commercial+", "Plumbing", "Corporate", 18, 3, 8, 2, 15, 1, 0], ["709454783", "Shaw Mechanical LLC", "Commercial+", "HVAC", "Corporate", 18, 1, 10, 0, 0, 0, 0], ["516069328", "Trouth Air Conditioning", "Commercial+", "HVAC", "Corporate", 16, 7, 10, 0, 1, 3, 4], ["4648139419", "Air Design Systems MEP, LLC.", "Commercial+", "HVAC", "Enterprise", 13, 3, 5, 9, 3, 0, 0], ["3319963286", "Med City Electric LLC", "Commercial+", "Electrical", "Corporate", 13, 5, 6, 3, 2, 4, 1]]}, "cor": {"label": "Change Order Requests", "color": "#375623", "light": "#E2EFDA", "kpis": [{"label": "Tenants Using CORs", "value": "313", "sub": "all-time"}, {"label": "Peak Monthly Active", "value": "110", "sub": "Feb 2026"}, {"label": "Total CORs Created", "value": "1,423", "sub": "Aug 25 - Jun 26"}, {"label": "Approval Rate", "value": "52.6%", "sub": "748 approved"}], "monthly": {"labels": ["Aug-25", "Sep-25", "Oct-25", "Nov-25", "Dec-25", "Jan-26", "Feb-26", "Mar-26", "Apr-26", "May-26", "Jun-26"], "tenants": [2, 11, 22, 29, 36, 64, 110, 87, 73, 70, 78], "volume": [2, 23, 36, 44, 63, 126, 203, 253, 209, 198, 266]}, "status": [{"label": "Approved", "value": 748, "color": "#375623"}, {"label": "Draft", "value": 391, "color": "#BDD7EE"}, {"label": "Sent", "value": 190, "color": "#9DC3E6"}, {"label": "Rejected", "value": 86, "color": "#C00000"}, {"label": "Responded", "value": 8, "color": "#6AAFE6"}], "market_cat": [{"cat": "Commercial+", "tenants": 210, "volume": 1047, "rate": "52.6%"}, {"cat": "Residential S&R", "tenants": 62, "volume": 293, "rate": "52.6%"}, {"cat": "Unknown", "tenants": 41, "volume": 83, "rate": "52.6%"}], "tenants": [["4680646549", "Bantam's Plumbing Company, Inc.", "Residential S&R", "Plumbing", "Corporate", 106, 6, 77, 69, 10, 10, 15], ["4310244373", "Buzzbolt Electric Limited", "Commercial+", "Electrical", "Corporate", 62, 9, 43, 6, 4, 2, 14], ["4244838805", "Core Electrical Services, Inc.", "Commercial+", "Electrical", "Corporate", 61, 7, 24, 13, 12, 8, 8], ["4582193941", "Ambition Mechanical Services", "Commercial+", "HVAC", "Corporate", 46, 5, 28, 16, 7, 2, 0], ["4648139419", "Air Design Systems MEP, LLC.", "Commercial+", "HVAC", "Enterprise", 45, 4, 22, 2, 21, 13, 9], ["3319963286", "Med City Electric LLC", "Commercial+", "Electrical", "Corporate", 37, 5, 16, 5, 7, 7, 13], ["2249552758", "Overhead Door Company of Chicago", "Commercial+", "Garage Door", "Corporate", 29, 5, 21, 4, 13, 8, 2], ["516069328", "Trouth Air Conditioning", "Commercial+", "HVAC", "Corporate", 28, 6, 8, 1, 0, 2, 19], ["4417157909", "GHC Mechanical", "Commercial+", "HVAC", "Enterprise", 28, 6, 24, 4, 10, 3, 4], ["4399405338", "AMSI Services", "Commercial+", "HVAC", "Enterprise", 28, 4, 15, 2, 0, 3, 22], ["4379120798", "Ehman Electrical Contractor LLC", "Commercial+", "Electrical", "Corporate", 27, 4, 9, 1, 12, 10, 4], ["4861203221", "Air Craft, Inc.", "Commercial+", "HVAC", "Corporate", 26, 3, 16, 0, 1, 2, 23], ["4427585695", "iPlumbKC, LLC", "Residential S&R", "Plumbing", "Corporate", 26, 6, 21, 8, 3, 6, 4], ["410383364", "E.D.S Air Conditioning & Plumbing", "Residential S&R", "HVAC", "Corporate", 26, 5, 14, 1, 0, 6, 6], ["4633086485", "DryTech Commercial Roofing Services", "Commercial+", "Roofing", "Corporate", 24, 4, 21, 0, 7, 7, 8], ["1827943193", "Priority Plumbers, LLC", "Residential S&R", "Plumbing", "Corporate", 20, 9, 13, 3, 2, 0, 4], ["916906681", "U M Air Inc.", "Commercial+", "HVAC", "Corporate", 19, 3, 6, 0, 7, 9, 3], ["4315313045", "LL Mechanical Services, LLC", "Commercial+", "HVAC", "Corporate", 19, 5, 8, 7, 2, 1, 4], ["875268266", "MJ Plumbing Heating & Cooling", "Commercial+", "Plumbing", "Corporate", 18, 5, 10, 4, 3, 4, 0], ["4333428885", "Meckley Services, Inc", "Commercial+", "Plumbing", "Enterprise", 16, 7, 5, 1, 0, 0, 1]]}, "submittals": {"label": "Submittals", "color": "#7030A0", "light": "#E8D5F5", "kpis": [{"label": "Tenants Using Submittals", "value": "197", "sub": "all-time"}, {"label": "Peak Monthly Active", "value": "66", "sub": "Feb 2026"}, {"label": "Total Submittals Created", "value": "1,448", "sub": "Oct 25 - Jun 26"}, {"label": "Closure Rate", "value": "47.1%", "sub": "682 closed"}], "monthly": {"labels": ["Oct-25", "Nov-25", "Dec-25", "Jan-26", "Feb-26", "Mar-26", "Apr-26", "May-26", "Jun-26"], "tenants": [1, 13, 19, 40, 66, 49, 43, 47, 49], "volume": [1, 37, 96, 138, 353, 200, 177, 167, 279]}, "status": [{"label": "Closed", "value": 682, "color": "#1F3864"}, {"label": "Submitted", "value": 326, "color": "#9DC3E6"}, {"label": "Draft", "value": 312, "color": "#BDD7EE"}, {"label": "Response Received", "value": 128, "color": "#6AAFE6"}], "submittal_types": [{"label": "Product Data", "value": 740}, {"label": "Other / Unspecified", "value": 479}, {"label": "Shop Drawings", "value": 188}, {"label": "Method of Procedures", "value": 20}, {"label": "Samples", "value": 14}, {"label": "Mock-Ups", "value": 7}], "market_cat": [{"cat": "Commercial+", "tenants": 133, "volume": 1064, "rate": "47.1%"}, {"cat": "Residential S&R", "tenants": 42, "volume": 293, "rate": "47.1%"}, {"cat": "Unknown", "tenants": 22, "volume": 91, "rate": "47.1%"}], "tenants": [["4399405338", "AMSI Services", "Commercial+", "HVAC", "Enterprise", 164, 6, 89, 15, 22, 50, 62], ["1028353066", "Overhead Door Co. of Greater Pittsburgh", "Commercial+", "Garage Door", "Corporate", 145, 4, 140, 15, 8, 0, 0], ["4244838805", "Core Electrical Services, Inc.", "Commercial+", "Electrical", "Corporate", 103, 7, 34, 3, 11, 6, 9], ["3693706389", "Ready Power LLC", "Commercial+", "Electrical", "Corporate", 93, 1, 61, 0, 0, 0, 93], ["636172980", "Climatech of Professional Air Inc.", "Commercial+", "HVAC", "Corporate", 70, 5, 32, 20, 27, 3, 15], ["965678373", "Crawford Door Sales", "Commercial+", "Garage Door", "Corporate", 37, 7, 24, 2, 5, 5, 2], ["3841494556", "Parker Services, Inc", "Commercial+", "HVAC", "Corporate", 33, 3, 1, 0, 0, 5, 0], ["4491957013", "Reeves Specialty Services LLC", "Commercial+", "HVAC", "Enterprise", 33, 6, 5, 17, 0, 0, 1], ["2386390811", "JBF LLC DBA Pioneer Overhead Door", "Commercial+", "Garage Door", "Corporate", 30, 5, 16, 11, 4, 1, 1], ["516069328", "Trouth Air Conditioning", "Commercial+", "HVAC", "Corporate", 28, 5, 14, 0, 0, 3, 10], ["4315313045", "LL Mechanical Services, LLC", "Commercial+", "HVAC", "Corporate", 28, 5, 17, 0, 0, 1, 1], ["438898094", "Stanley-Ruth Co. LLC", "Commercial+", "HVAC", "Enterprise", 26, 2, 7, 25, 0, 1, 0], ["4648139419", "Air Design Systems MEP, LLC.", "Commercial+", "HVAC", "Enterprise", 26, 5, 12, 8, 12, 1, 4], ["125844995", "Allied Plumbing & Trenchless", "Commercial+", "Plumbing", "Corporate", 26, 5, 11, 0, 5, 1, 1], ["1689452192", "Postma Heating And Cooling Inc.", "Commercial+", "HVAC", "Enterprise", 26, 1, 12, 0, 0, 0, 0], ["4680646549", "Bantam's Plumbing Company, Inc.", "Residential S&R", "Plumbing", "Corporate", 23, 6, 7, 7, 8, 1, 4], ["848413091", "JKA Well Drilling & Pumps", "Residential S&R", "Plumbing", "Corporate", 20, 2, 12, 0, 0, 0, 2], ["410383364", "E.D.S Air Conditioning & Plumbing", "Residential S&R", "HVAC", "Corporate", 20, 3, 12, 0, 1, 18, 1], ["901450317", "Lowry Overhead Doors", "Residential S&R", "Garage Door", "Corporate", 19, 7, 10, 1, 0, 3, 1], ["2745517717", "Titan Plumbing LLC", "Commercial+", "Plumbing", "Corporate", 19, 5, 5, 3, 2, 1, 4]]}, "budget_codes": {"label": "Budget Codes", "color": "#0F7B6C", "light": "#D0EDE9", "kpis": [{"label": "Tenants w/ Budget Codes", "value": "192", "sub": "construction tenants configured"}, {"label": "Total Entity Bindings", "value": "5.96M", "sub": "all-time across all entity types"}, {"label": "Estimate Item Bindings", "value": "3.85M", "sub": "64.6% of all bindings"}, {"label": "Custom Segments", "value": "10", "sub": "tenants with non-standard segments beyond CC+CT+Phase"}], "monthly": {"labels": ["Aug-25", "Sep-25", "Oct-25", "Nov-25", "Dec-25", "Jan-26", "Feb-26", "Mar-26", "Apr-26", "May-26", "Jun-26"], "tenants": [137, 21, 22, 27, 25, 27, 35, 38, 51, 50, 53], "volume": [418, 226, 319, 230, 418, 568, 1148, 2041, 1890, 1251, 874]}, "status": [{"label": "Estimate Items", "value": 3850101, "color": "#0F7B6C"}, {"label": "Payroll / Labor Items", "value": 723030, "color": "#1A9B87"}, {"label": "Other Entity Types", "value": 864221, "color": "#C8E6E3"}, {"label": "Invoice / Billing Items", "value": 517886, "color": "#2AC4AC"}], "seg_config": [{"cat": "Cost Code + Cost Type + Phase (Standard)", "tenants": 181, "pct": 94}, {"cat": "Standard + Tenant Custom Segments", "tenants": 10, "pct": 5}, {"cat": "Budget Codes Only (no Segments)", "tenants": 1, "pct": 1}], "custom_segments": [{"label": "Building Number", "tenants": 2}, {"label": "Department", "tenants": 1}, {"label": "Trade / Function", "tenants": 1}, {"label": "SOV", "tenants": 1}, {"label": "Phasing / Sequence", "tenants": 2}, {"label": "Other custom", "tenants": 3}], "bc_tenants": [["889499837", "PJ Fitzpatrick LLC", "Commercial+", "Roofing / Plumbing", 949187, 2, 2, 0, 0, 0, 0], ["4514093722", "Davis A/C", "Residential S&R", "HVAC", 695127, 44, 3, 0, 0, 0, 0], ["513410343", "Air Mechanical, Inc.", "Commercial+", "HVAC", 153186, 13, 2, 0, 0, 0, 0], ["588925512", "Beyer Plumbing Company, Ltd.", "Residential S&R", "Plumbing", 152995, 2075, 4, 0, 0, 0, 0], ["1570405818", "Adams Electric Inc.", "Commercial+", "Electrical", 150796, 9, 3, 0, 0, 0, 0], ["414185988", "Riley Plumbing & Heating", "Commercial+", "Plumbing", 140163, 2, 2, 0, 0, 0, 0], ["878299941", "Middleton Heat & Air", "Residential S&R", "HVAC", 111424, 201, 3, 0, 0, 0, 0], ["4838610965", "Hurlburt", "Commercial+", "HVAC", 109597, 2, 2, 0, 0, 0, 0], ["4151076245", "Roofwerks, Inc.", "Commercial+", "Roofing", 107183, 2, 2, 0, 0, 0, 0], ["3739165333", "Magnolia Plumbing, Heating & Cooling", "Commercial+", "HVAC", 105032, 2, 2, 0, 0, 0, 0], ["4558609703", "James River A/C", "Residential S&R", "HVAC", 103080, 65, 4, 0, 0, 0, 0], ["864824110", "Aloha Pools & Spas", "Residential S&R", "Pool / Spa", 98086, 2, 2, 0, 0, 0, 0], ["378941836", "Gillette Heating & Air Conditioning", "Commercial+", "HVAC", 94941, 2, 2, 0, 0, 0, 0], ["2450016174", "Goose Creek Heating", "Commercial+", "HVAC", 89774, 2, 2, 0, 0, 0, 0], ["2283436330", "JKS KV Inc.", "Commercial+", "HVAC", 85911, 2, 2, 0, 0, 0, 0], ["420967683", "Skillings & Sons", "Commercial+", "HVAC", 81366, 2, 2, 0, 0, 0, 0], ["4333428885", "Meckley Services, Inc.", "Commercial+", "Plumbing", 74269, 134, 2, 0, 0, 0, 0], ["397061508", "Air Solutions, Inc.", "Commercial+", "HVAC", 68474, 2, 2, 0, 0, 0, 0], ["1345706406", "Nottawasaga Mechanical", "Commercial+", "HVAC", 65856, 2, 2, 0, 0, 0, 0], ["1070941229", "Advanced Comfort Solutions (WY)", "Commercial+", "HVAC", 64833, 223, 3, 0, 0, 0, 0]]}};
+
+function show(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  el.classList.add('active');
+  const titles = {
+    overview:'All Construction Features',
+    daily_logs:'Daily Logs',rfi:'RFIs',
+    cor:'Change Order Requests',submittals:'Submittals',
+    budget_codes:'Budget Codes'
+  };
+  document.getElementById('page-title').textContent = titles[id] || id;
+}
+
+function filterTable(input, tableId) {
+  const q = input.value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+const ALPHA = 'CC';
+function monthlyChart(canvasId, labels, tenants, volume, color) {
+  new Chart(document.getElementById(canvasId), {
+    data: {
+      labels,
+      datasets: [
+        {type:'bar',label:'Active Tenants',data:tenants,backgroundColor:color+ALPHA,
+          yAxisID:'y',borderRadius:4,order:2},
+        {type:'line',label:'Volume',data:volume,borderColor:'#ED7D31',
+          backgroundColor:'transparent',yAxisID:'y2',borderWidth:2.5,
+          pointRadius:3,pointBackgroundColor:'#ED7D31',tension:.3,order:1},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:12}},
+               tooltip:{mode:'index',intersect:false}},
+      scales:{
+        y:{position:'left',grid:{color:'#F3F4F6'},ticks:{font:{size:11}},
+           title:{display:true,text:'Active Tenants',font:{size:10},color:'#6B7280'}},
+        y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:11}},
+            title:{display:true,text:'Volume',font:{size:10},color:'#ED7D31'}},
+        x:{grid:{display:false},ticks:{font:{size:11}}},
+      }
+    }
+  });
+}
+
+new Chart(document.getElementById('chart-overview'), {
+  type:'line',
+  data:{
+    labels:['Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26','May-26','Jun-26'],
+    datasets:[
+      {label:'Daily Logs',data:[2,9,19,26,28,48,70,88,83,82,80],
+        borderColor:'#2E75B6',backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:3,tension:.3},
+      {label:'RFIs',data:[1,14,21,35,42,65,80,78,63,51,55],
+        borderColor:'#C55A11',backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:3,tension:.3},
+      {label:'Change Orders',data:[2,11,22,29,36,64,110,87,73,70,78],
+        borderColor:'#375623',backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:3,tension:.3},
+      {label:'Submittals',data:[null,null,1,13,19,40,66,49,43,47,49],
+        borderColor:'#7030A0',backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:3,tension:.3},
+      {label:'Budget Codes',data:[192,192,192,192,192,192,192,192,192,192,192],
+        borderColor:'#0F7B6C',backgroundColor:'transparent',
+        borderWidth:2,pointRadius:3,tension:.3,borderDash:[4,4]},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{font:{size:12},boxWidth:14}},
+             tooltip:{mode:'index',intersect:false}},
+    scales:{
+      y:{grid:{color:'#F3F4F6'},ticks:{font:{size:11}},
+         title:{display:true,text:'Active Tenants',font:{size:11},color:'#6B7280'}},
+      x:{grid:{display:false},ticks:{font:{size:11}}},
+    }
+  }
+});
+
+Object.entries(DATA).forEach(([fid, d]) => {
+  const m = d.monthly;
+  if (m && document.getElementById('chart-'+fid+'-monthly')) {
+    monthlyChart('chart-'+fid+'-monthly', m.labels, m.tenants, m.volume, d.color);
+  }
+});
+</script>
+</body></html>
